@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combine Images into A4 Size</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .image-upload {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background: #2a2a2a;
+            color: white;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #218838;
+        }
+
+        a {
+            display: none;
+            margin-top: 15px;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        /* Hide right-click menu */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div class="container">
+        <h1>Combine Two Images into A4 Size</h1>
+        <div class="image-upload">
+            <label for="frontImage">Upload Front Image:</label>
+            <input type="file" id="frontImage" accept="image/*">
+        </div>
+        <div class="image-upload">
+            <label for="backImage">Upload Back Image:</label>
+            <input type="file" id="backImage" accept="image/*">
+        </div>
+        <div>
+            <label for="imageName">Enter Image Name:</label>
+            <input type="text" id="imageName" placeholder="citizenship-front-back">
+        </div>
+        <button id="saveImage">Combine Images</button>
+        <a id="downloadLink">Download Combined Image</a>
+    </div>
+    <canvas id="a4Canvas" width="2480" height="3508"></canvas>
+    <script>
+        document.getElementById('frontImage').addEventListener('change', handleImageUpload);
+        document.getElementById('backImage').addEventListener('change', handleImageUpload);
+        document.getElementById('saveImage').addEventListener('click', combineImages);
+
+        let frontImg = null;
+        let backImg = null;
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                if (event.target.id === 'frontImage') {
+                    frontImg = new Image();
+                    frontImg.src = e.target.result;
+                } else if (event.target.id === 'backImage') {
+                    backImg = new Image();
+                    backImg.src = e.target.result;
+                }
+            };
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function combineImages() {
+            if (!frontImg || !backImg) {
+                alert('Please upload both front and back images.');
+                return;
+            }
+
+            const canvas = document.getElementById('a4Canvas');
+            const ctx = canvas.getContext('2d');
+            const A4_WIDTH = 2480;
+            const A4_HEIGHT = 3508;
+            const WHITE_GAP = 150;
+            const MIDDLE_GAP = 200;
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
+
+            function drawCoverImage(img, x, y, width, height) {
+                const imgAspectRatio = img.width / img.height;
+                const boxAspectRatio = width / height;
+                let drawWidth, drawHeight, offsetX, offsetY;
+                if (imgAspectRatio > boxAspectRatio) {
+                    drawHeight = height;
+                    drawWidth = height * imgAspectRatio;
+                    offsetX = (width - drawWidth) / 2;
+                    offsetY = 0;
+                } else {
+                    drawWidth = width;
+                    drawHeight = width / imgAspectRatio;
+                    offsetX = 0;
+                    offsetY = (height - drawHeight) / 2;
+                }
+                ctx.drawImage(img, x + offsetX, y + offsetY, drawWidth, drawHeight);
+            }
+
+            const imageHeight = (A4_HEIGHT - 2 * WHITE_GAP - MIDDLE_GAP) / 2;
+            const imageWidth = A4_WIDTH - 2 * WHITE_GAP;
+            drawCoverImage(frontImg, WHITE_GAP, WHITE_GAP, imageWidth, imageHeight);
+            drawCoverImage(backImg, WHITE_GAP, WHITE_GAP + imageHeight + MIDDLE_GAP, imageWidth, imageHeight);
+
+            const imageName = document.getElementById('imageName').value || 'citizenship-front-back';
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = dataUrl;
+            downloadLink.download = `${imageName}.jpg`;
+            downloadLink.style.display = 'block';
+            downloadLink.textContent = 'Download Combined Image';
+        }
+    </script>
+</body>
+</html>
